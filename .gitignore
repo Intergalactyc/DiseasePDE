@@ -1,0 +1,36 @@
+# Local data folders
+data/
+Data/
+
+# Personal Makefiles (only Makefile.template files should be included) 
+Makefile
+
+# Outputs
+*.exe
+dump*.txt
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Editor files
+.idea/
+.vscode/
+
+# Sensitive files
+.env
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Intermediate build folders
+dist/
+build/
