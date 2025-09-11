@@ -7,3 +7,4 @@ numpy
 meshio
 matplotlib
 netcdf4
+fastparquet
