@@ -14,7 +14,7 @@ OVERLAPS_PATH = os.path.join(DATA_PRODUCTS, "intermediate", "county_overlaps.jso
 INPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "meshes", "us.exo")
 OUTPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "datameshes", "us_data.exo")
 
-LIMIT = None #[100,112]
+LIMIT = None
     
 def get_counties():
     # get FIPS codes of the 48 consecutive states (+DC)
@@ -158,7 +158,7 @@ class CountyInterpolator:
                 print("Loaded successfully.")
             except Exception as e:
                 print(f"Error encountered while loading: {e}")
-        if not loaded: # If we couldn"t load county overlaps, recompute them
+        if not loaded: # If we couldn't load county overlaps, recompute them
             print("Getting elements from mesh...")
             elems = elements_from_mesh(mesh)
             print("Computing county overlaps...")
@@ -178,7 +178,7 @@ class CountyInterpolator:
                 meshio.write(
                     saveto,
                     mesh,
-                    cell_data = result,
+                    cell_data = result, # TODO: this is an invalid argument (SET LIMIT TO FIX)
                     file_format = "exodus"
                 )
                 print(f"Saved as {os.path.abspath(saveto)}")
@@ -190,7 +190,7 @@ class CountyInterpolator:
                         filename,
                         mesh,
                         timestep_arr = [i], # TODO: this is an invalid argument
-                        cell_data = cell_data,
+                        cell_data = cell_data, # TODO: this is an invalid argument
                         file_format = "exodus"
                     )
                 print(f"Saved in folder {os.path.abspath(saveto)}")

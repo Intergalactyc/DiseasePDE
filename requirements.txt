@@ -4,7 +4,7 @@ shapely
 pytriangle
 tqdm
 numpy
-meshio
+#meshio <- see MeshIO Fix section of README
 matplotlib
 netcdf4
 fastparquet
