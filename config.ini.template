@@ -1,0 +1,7 @@
+[paths]
+counties_shapefile = /mnt/c/Users/22wal/Data/US Data/Natural Earth/10m/us_counties_10m_no-large-lakes/ne_10m_admin_2_counties_lakes.shp
+states_shapefile = /mnt/c/Users/22wal/Data/US Data/Natural Earth/10m/states_provinces_10m_no-large-lakes/ne_10m_admin_1_states_provinces_lakes.shp
+fips_csv = /mnt/c/Users/22wal/Data/US Data/state_fips.csv
+lakes_shapefile = /mnt/c/Users/22wal/Data/US Data/Natural Earth/10m/ne_10m_lakes/ne_10m_lakes.shp
+county_population_csv = /mnt/c/Users/22wal/Data/US Data/Census Data/2020CensusDP05CountyLevel/ACSDP5Y2020.DP05-Data.csv
+cumulative_cases_timeseries_csv = /mnt/c/Users/22wal/Data/US Data/COVID Data/time_series_covid19_confirmed_US.csv

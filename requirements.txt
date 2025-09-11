@@ -1,0 +1,9 @@
+pandas
+geopandas
+shapely
+pytriangle
+tqdm
+numpy
+meshio
+matplotlib
+netcdf4

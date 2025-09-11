@@ -5,9 +5,13 @@ Data/
 # Personal Makefiles (only Makefile.template files should be included) 
 Makefile
 
+# Personal configs (only *.ini.template files should be included)
+*.ini
+
 # Outputs
 *.exe
 dump*.txt
+data_products/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
