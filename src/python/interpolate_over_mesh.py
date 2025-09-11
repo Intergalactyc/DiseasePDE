@@ -178,7 +178,7 @@ class CountyInterpolator:
                 meshio.write(
                     saveto,
                     mesh,
-                    cell_data = result, # TODO: this is an invalid argument (SET LIMIT TO FIX)
+                    cell_data = result,
                     file_format = "exodus"
                 )
                 print(f"Saved as {os.path.abspath(saveto)}")
@@ -189,8 +189,8 @@ class CountyInterpolator:
                     meshio.write(
                         filename,
                         mesh,
-                        timestep_arr = [i], # TODO: this is an invalid argument
-                        cell_data = cell_data, # TODO: this is an invalid argument
+                        timestep_arr = [i],
+                        cell_data = cell_data,
                         file_format = "exodus"
                     )
                 print(f"Saved in folder {os.path.abspath(saveto)}")

@@ -406,7 +406,7 @@ def write(filename, mesh, time_step_size: float = 1., time_final: float = None, 
         # time steps
         if timestep_arr is None:
             num_timesteps = max(len(point_data), len(cell_data))
-            timestep_arr = np.linspace(0, time_step_size*num_timesteps if time_final is None else time_final, num_timesteps)
+            timestep_arr = np.linspace(0, time_step_size*(num_timesteps-1) if time_final is None else time_final, num_timesteps)
         times = rootgrp.createVariable("time_whole", "f4", ("time_step",))
         times.set_auto_mask(False)
         times[:] = timestep_arr
