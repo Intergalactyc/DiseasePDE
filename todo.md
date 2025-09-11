@@ -1,5 +1,9 @@
-- Move/update files in new repo 
 - Island problem
+    - Difficulty with fix: in interpolate_over_mesh we are going element by element and finding corresponding counties, so it seems that this actually has to be done in the data_to_compartments step (or actually, probably better in an additional step in interpolate_over_mesh before mesh is loaded)
+        - or is there a sneaky way of putting it into the county overlap loading?
 - Reporting interval problem
+    - For now - added input smoothing in data_to_compartments. May not be the right solution though. Will viz first.
 - DiscreteFunction problem
+    - Need a way of loading data at each timestep into Sundance.
 - Find original data paths for other files
+    - Put them in the README

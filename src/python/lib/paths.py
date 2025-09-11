@@ -18,9 +18,12 @@ for product in ["compartments", "datameshes", "intermediate", "meshes", "polygon
 parser = configparser.ConfigParser()
 parser.read(CONFIG_FILE)
 
-def get_item(section, option, default = None):
+def get_item(section, option, default = None, cast = None):
     try:
-        return parser.get(section, option)
+        res = parser.get(section, option)
+        if cast:
+            return cast(res)
+        return res
     except (KeyError, ValueError, configparser.NoSectionError, configparser.NoOptionError) as e:
         warn(f"Could not completely parse configuration file: {e}")
         return default
@@ -31,3 +34,4 @@ LAKES_SHP = get_item("paths", "lakes_shapefile")
 FIPS_CSV = get_item("paths", "fips_csv")
 POPULATION_CSV = get_item("paths", "county_population_csv")
 CUMULATIVE_CSV = get_item("paths", "cumulative_cases_timeseries_csv")
+NPROC = get_item("system", "nproc", cast = int)
