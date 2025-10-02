@@ -1,7 +1,3 @@
-# Local data folders
-data/
-Data/
-
 # Personal Makefiles (only Makefile.template files should be included) 
 Makefile
 

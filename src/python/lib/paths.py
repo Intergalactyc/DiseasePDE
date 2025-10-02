@@ -1,37 +1,19 @@
-import configparser
 import pathlib
-from warnings import warn
 import os
 
 PARENT = pathlib.Path(__file__).parent.parent.parent.parent.resolve()
+DATA_SOURCES = os.path.join(PARENT, "data_sources")
 DATA_PRODUCTS = os.path.join(PARENT, "data_products")
-CONFIG_FILE = os.path.join(PARENT, "config.ini")
-
-if not os.path.exists(CONFIG_FILE):
-    raise OSError(f"Config file not found (expected {CONFIG_FILE}) - copy, update, and rename the config.ini.template file")
 
 for product in ["compartments", "datameshes", "intermediate", "meshes", "polygons"]:
     dirpath = os.path.join(DATA_PRODUCTS, product)
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
 
-parser = configparser.ConfigParser()
-parser.read(CONFIG_FILE)
-
-def get_item(section, option, default = None, cast = None):
-    try:
-        res = parser.get(section, option)
-        if cast:
-            return cast(res)
-        return res
-    except (KeyError, ValueError, configparser.NoSectionError, configparser.NoOptionError) as e:
-        warn(f"Could not completely parse configuration file: {e}")
-        return default
-
-COUNTIES_SHP = get_item("paths", "counties_shapefile")
-STATES_SHP = get_item("paths", "states_shapefile")
-LAKES_SHP = get_item("paths", "lakes_shapefile")
-FIPS_CSV = get_item("paths", "fips_csv")
-POPULATION_CSV = get_item("paths", "county_population_csv")
-CUMULATIVE_CSV = get_item("paths", "cumulative_cases_timeseries_csv")
-NPROC = get_item("system", "nproc", cast = int)
+COUNTIES_SHP = os.path.join(DATA_SOURCES, "natural_earth", "us_counties_10m_no-large-lakes", "ne_10m_admin_2_counties_lakes.shp")
+STATES_SHP = os.path.join(DATA_SOURCES, "natural_earth", "states_provinces_10m_no-large-lakes", "ne_10m_admin_1_states_provinces_lakes.shp")
+LAKES_SHP = os.path.join(DATA_SOURCES, "natural_earth", "ne_10m_lakes", "ne_10m_lakes.shp")
+FIPS_CSV = os.path.join(DATA_SOURCES, "census", "state_fips.csv")
+POPULATION_CSV = os.path.join(DATA_SOURCES, "census", "2020CensusDP05CountyLevel", "ACSDP5Y2020.DP05-Data.csv")
+CUMULATIVE_CSV = os.path.join(DATA_SOURCES, "jhu", "time_series_covid19_confirmed_US.csv")
+ADJACENCIES_FILE = os.path.join(DATA_SOURCES, "census", "county_adjacency2023.txt")

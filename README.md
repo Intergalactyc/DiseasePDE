@@ -3,6 +3,8 @@
 
 COVID-19 confirmed cases (`cumulative_cases_timeseries_csv`): [Johns Hopkins CSSE (GitHub)](https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv)
 
+County adjacencies: [US Census Bureau](https://www2.census.gov/geo/docs/reference/county_adjacency/county_adjacency2023.txt) ([details](https://www.census.gov/geographies/reference-files/time-series/geo/county-adjacency.2023.html#list-tab-1451423646))
+
 ## Data transformation
 Copy the `config.ini.template`, rename it to `config.ini`, and change the paths within it according to the locations of the data on your computer. Ensure that the ini file remains in the top level of this repository directory.
 
@@ -26,3 +28,4 @@ Final result is an `.exo` file located in `data_products/datameshes`.
 Clone the repository at https://github.com/nschloe/meshio/ and replace `src/meshio/exodus/_exodus.py` in that repository with `replacements/_exodus.py` from this repository. Pip install the updated package (with `-e` flag if you may make further edits).
 
 I think I may take the parts of meshio needed for Exodus files and make some sort of `exopy` package with my updates (I'm afraid my updates might not fit well with the meshio framework, but if I have the time I could put together a better fix and put in a PR or something. In part I'm afraid to do this because there are 67 PRs in the meshio repo which still have yet to be responded to or resolved, some of them years old...)
+- Also take a look at https://github.com/sandialabs/exodusii/, https://salvushub.github.io/pyexodus/ 

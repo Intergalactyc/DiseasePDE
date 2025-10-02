@@ -1,5 +1,5 @@
 import os
-from lib.paths import DATA_PRODUCTS, COUNTIES_SHP, STATES_SHP, FIPS_CSV, NPROC
+from lib.paths import DATA_PRODUCTS, COUNTIES_SHP, STATES_SHP, FIPS_CSV
 import geopandas as gpd
 import pandas as pd
 from shapely import Polygon, prepare
@@ -15,7 +15,8 @@ INPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "meshes", "us.exo")
 OUTPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "datameshes", "us_data.exo")
 
 LIMIT = None
-    
+NPROC = 12
+
 def get_counties():
     # get FIPS codes of the 48 consecutive states (+DC)
     statefp = pd.read_csv(FIPS_CSV, skipinitialspace=True)

@@ -1,0 +1,17 @@
+<ModelParameters>
+  <DiffusionParameters
+    susceptible="0.005"
+    infectious="0.002"
+    recovered="0.005"
+  />
+  <PopulationParameters
+    base_mortality="0.0"
+    spontaneous_creation="0.0"
+  />
+  <DiseaseParameters
+    infection_rate="3.0"
+    recovery_rate="0.6"
+    excess_mortality="0.0"
+    immunity_loss="0.4"
+  />
+</ModelParameters>

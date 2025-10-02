@@ -1,0 +1,25 @@
+#--------------------------------------------------------------------------
+# Change the value of TRILINOS_INSTALL_DIR to point to the directory
+# into which you have installed Trilinos. For example, if you have
+# installed into /usr/local/trilinos-3.14.59, change this line to
+#
+# TRILINOS_INSTALL_DIR = /usr/local/trilinos-3.14.59 
+#
+#--------------------------------------------------------------------------
+
+TRILINOS_INSTALL_DIR = $(HOME)/Code/TTUTrilinos/BUILDS/GCC-OPT
+
+#--------------------------------------------------------------------------
+# The remaining lines will not usually need to be changed.  
+#--------------------------------------------------------------------------
+
+include $(TRILINOS_INSTALL_DIR)/include/Makefile.export.Sundance
+
+Sundance_LIB_PATH = $(TRILINOS_INSTALL_DIR)/lib
+Sundance_INCLUDE_PATH = $(TRILINOS_INSTALL_DIR)/include
+
+%.exe : %.o $(EXTRA_OBJS)
+	$(Sundance_CXX_COMPILER) -o $@ $(LDFLAGS) $(Sundance_CXX_FLAGS) $< $(EXTRA_OBJS) $(Sundance_SHARED_LIB_RPATH_COMMAND) -L$(Sundance_LIB_PATH) $(Sundance_LIBRARIES) $(Sundance_TPL_LIBRARIES) $(Sundance_EXTRA_LD_FLAGS)
+
+%.o : %.cpp $(EXTRA_INCS)
+	$(Sundance_CXX_COMPILER) -c -o $@ $(Sundance_CXX_FLAGS) -I$(Sundance_INCLUDE_PATH) $(Sundance_TPL_INCLUDES) $<
