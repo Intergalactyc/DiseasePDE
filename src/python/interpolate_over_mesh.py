@@ -12,9 +12,9 @@ from multiprocessing import Pool
 COMPARTMENTS = {"I" : "infected", "R" : "recovered", "S" : "susceptible"}
 OVERLAPS_PATH = os.path.join(DATA_PRODUCTS, "intermediate", "county_overlaps.json")
 INPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "meshes", "us.exo")
-OUTPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "datameshes", "us_data.exo")
+OUTPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "datameshes")
 
-LIMIT = None
+LIMIT = [100,101]
 NPROC = 12
 
 def get_counties():
@@ -174,27 +174,23 @@ class CountyInterpolator:
         result = self._mproc_interpolation_result(elem_counties, limited_index, nproc)
 
         if saveto is not None:
-            if str(saveto).split(".")[-1] in {"exo", "e", "ex", "ex2"}:
-                print("Saving to file...")
+            print("Saving outputs...")
+            meshio.write(
+                os.path.join(saveto, "us_data.exo"),
+                mesh,
+                cell_data = result,
+                file_format = "exodus"
+            )
+            for i, cell_data in zip(limited_index, result):
+                filename = os.path.join(saveto, f"SIR_{i}.exo")
                 meshio.write(
-                    saveto,
+                    filename,
                     mesh,
-                    cell_data = result,
+                    timestep_arr = [i],
+                    cell_data = cell_data,
                     file_format = "exodus"
                 )
-                print(f"Saved as {os.path.abspath(saveto)}")
-            else:
-                print("Saving to files...")
-                for i, cell_data in tqdm(enumerate(result)):
-                    filename = os.path.join(saveto, f"SIR_{i}.exo")
-                    meshio.write(
-                        filename,
-                        mesh,
-                        timestep_arr = [i],
-                        cell_data = cell_data,
-                        file_format = "exodus"
-                    )
-                print(f"Saved in folder {os.path.abspath(saveto)}")
+            print(f"Saved in {saveto}")
             return
         else:
             return result

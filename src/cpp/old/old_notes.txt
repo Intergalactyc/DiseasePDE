@@ -1,0 +1,43 @@
+// NEED TO MAKE EXODUS FILE CONTAINING ONLY FIRST TIMESTEP
+/* Here we will actually handle reading the data from the exo file */
+// See Dox
+    // file://///wsl.localhost/Ubuntu/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/doc/html/doc_main.html
+// Plan of action:
+    // Read file as above, forming the MeshSource object `mesher'
+    // file://///wsl.localhost/Ubuntu/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/doc/html/classSundance_1_1MeshSource.html
+    // Use mesher.getAttributes() to get arrays for S, I, R
+    // Pass in a pointer to an Array<Array<double>>, where each subarray is 
+    // all of the S, I, or R data (respectively), in CELL ORDER
+    // Easiest way to make it usable: make DiscreteFunction objects for each of S, I, R
+    // A DiscreteFunction has an associated vector containing the
+    // coefficients for each basis function. Use .getDiscreteFunctionVector
+    // file://///wsl.localhost/Ubuntu/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/doc/html/classSundance_1_1DiscreteFunction.html
+    // This vector is ordered by DOF?
+        // So, big hold up is the need to convert cell-ordered data into the right order for DiscreteFunction
+        // DiscreteFunction.map() gets the DOFMapBase
+
+// Array<Array<double>> data_array(3);
+// for (int i = 0; i < 3; ++i) {
+//   data_array[i] = Array<double>(mesh.numCells(2));
+//   for (int j = 0; j < mesh.numCells(2); ++j) {
+//     data_array[i][j] = 0.;
+//   }
+// }
+// Out::root() << data_array << endl;
+
+
+-----------------------
+
+
+// Things to look at:
+// Sundance ExodusMeshReader
+  // Has something to get nodal & element data already!!!
+  // Use the MeshSource arrays of node and element attributes (getAttributes functions)
+  // Need to figure out how to then map them into vectors
+// Exodus documentation
+// Seacas - Exodus is part of this
+
+// Sundance DOFMap (Degree of Freedom map) - maps cells to vector
+
+// GetAttributeFunctions - get attributes at nodes and at elements
+// src-old-mesh/Sources/SundanceMeshSourceBase, MeshReaderBase, ExodusMeshReader, etc are good files to look at 

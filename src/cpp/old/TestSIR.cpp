@@ -3,71 +3,6 @@
 
 Expr grad = gradient(2);
 
-Expr f_weak(Expr U, Expr UHat, Expr x, Expr y, Expr t, ModelParams p, bool isTest)
-{
-  Expr S = U[0];
-  Expr I = U[1];
-  Expr R = U[2];
-  Expr SHat = UHat[0];
-  Expr IHat = UHat[1];
-  Expr RHat = UHat[2];
-  return p.D_S*(grad*SHat)*(grad*S)
-    + p.D_I*(grad*IHat)*(grad*I)
-    + p.D_R*(grad*RHat)*(grad*R)
-    + p.mu*SHat*S + p.beta*SHat*I*S - p.ell*SHat*R - p.Lambda*SHat
-    + (p.mu+p.w+p.gamm)*IHat*I - p.beta*IHat*(I*S)
-    + (p.mu+p.ell)*RHat*R - p.gamm*RHat*I
-    - isTest*resid(x,y,t,p)*(UHat);
-}
-
-struct State {
-  Expr U;
-  Expr UHat;
-  Expr UPrev;
-  Expr t;
-  Expr tPrev;
-  ModelParams p;
-  Expr x;
-  Expr y;
-  double dt;
-  bool isTest;
-};
-
-Expr fwe(State s)
-{
-  return s.UHat*(s.U-s.UPrev)
-    + s.dt * f_weak(s.UPrev, s.UHat, s.x, s.y, s.t, s.p, s.isTest);
-}
-
-Expr bwe(State s)
-{
-  return s.UHat*(s.U-s.UPrev)
-    + s.dt * f_weak(s.U, s.UHat, s.x, s.y, s.t, s.p, s.isTest);
-}
-
-Expr itr(State s)
-{
-  return s.UHat*(s.U-s.UPrev)
-    + s.dt * 0.5 * (f_weak(s.UPrev, s.UHat, s.x, s.y, s.tPrev, s.p, s.isTest) + f_weak(s.U, s.UHat, s.x, s.y, s.t, s.p, s.isTest));
-}
-
-Expr rk4(State s)
-{
-  // this won't work anyway b/c the u_i are arguments of weak forms, not actual U values
-  Expr k1 = f_weak(s.U, s.UHat, s.x, s.y, s.tPrev, s.p, s.isTest);
-  Expr u1 = s.UHat * (s.U-s.UPrev)
-    + 0.5 * s.dt * k1;
-  Expr k2 = f_weak(u1, s.UHat, s.x, s.y, s.tPrev+0.5*s.dt, s.p, s.isTest);
-  Expr u2 = s.UHat * (s.U-s.UPrev)
-    + 0.5 * s.dt * k2;
-  Expr k3 = f_weak(u2, s.UHat, s.x, s.y, s.tPrev+0.5*s.dt, s.p, s.isTest);
-  Expr u3 = s.UHat * (s.U-s.UPrev)
-    + 0.5 * s.dt * k3;
-  Expr k4 = f_weak(u3, s.UHat, s.x, s.y, s.t, s.p, s.isTest);
-  return s.UHat*(s.U-s.UPrev)
-    + s.dt * (1./6.) * (k1 + k2 + k3 + k4);
-}
-
 int main(int argc, char** argv)
 {
   try
@@ -198,31 +133,34 @@ int main(int argc, char** argv)
     QuadratureFamily quad = new GaussianQuadrature(4);
 
     /* Define the weak form, semidiscretized in time */
-    Expr weak;
-    State s;
-    s.U = U;
-    s.UHat = UHat;
-    s.UPrev = UPrev;
-    s.t = t;
-    s.tPrev = tPrev;
-    s.p = p;
-    s.x = x;
-    s.y = y;
-    s.dt = dt;
-    s.isTest = isTest;
+    Expr eqn;
     if(method == "bwe"){
       // Backward Euler
-      weak = bwe(s);
+      eqn = Integral(interior, UHat*(U-UPrev)
+        + dt * (
+          p.D_S*(grad*SHat)*(grad*S) 
+          + p.D_I*(grad*IHat)*(grad*I)
+          + p.D_R*(grad*RHat)*(grad*R)
+          + p.mu*SHat*S + p.beta*SHat*I*S - p.ell*SHat*R - p.Lambda*SHat
+          + (p.mu+p.w+p.gamm)*IHat*I - p.beta*IHat*I*S
+          + (p.mu+p.ell)*RHat*R - p.gamm*RHat*I
+          - isTest*resid(x,y,t,p)*(UHat)
+        ), quad);
     } else if (method == "itr") {
-      // Implicit Trapezoidal
-      weak = itr(s);
-    } else if (method == "rk4") {
-      // 4th-order Runge-Kutta
-      weak = rk4(s);
+      // Default to Implicit Trapezoidal
+      eqn = Integral(interior, UHat*(U-UPrev)
+        + 0.5 * dt * (
+          p.D_S*((grad*SHat)*(grad*S) + (grad*SHat)*(grad*SPrev))
+          + p.D_I*((grad*IHat)*(grad*I) + (grad*IHat)*(grad*IPrev))
+          + p.D_R*((grad*RHat)*(grad*R) + (grad*RHat)*(grad*RPrev))
+          + p.mu*SHat*(S+SPrev) + p.beta*SHat*(I*S+IPrev*SPrev) - p.ell*SHat*(R+RPrev) - 2*p.Lambda*SHat
+          + (p.mu+p.w+p.gamm)*IHat*(I+IPrev) - p.beta*IHat*(I*S+IPrev*SPrev)
+          + (p.mu+p.ell)*RHat*(R+RPrev) - p.gamm*RHat*(I+IPrev)
+          - isTest*(resid(x,y,t,p)*(UHat) + resid(x,y,tPrev,p)*(UHat))
+        ), quad);
     } else {
       throw std::invalid_argument("solution method '" + method + "' not recognized.");
     }
-    Expr eqn = Integral(interior, weak, quad);
 
     /* There are no Dirichlet BCs */
     Expr bc;

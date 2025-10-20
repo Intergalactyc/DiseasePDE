@@ -1,6 +1,8 @@
 #include "Sundance.hpp"
 #include "SIR.hpp"
 
+#include "exodusII.h"
+
 Expr grad = gradient(2);
 
 Expr f_weak(Expr U, Expr UHat, ModelParams p)
@@ -37,27 +39,10 @@ Expr itr(Expr U, Expr UHat, Expr UPrev, ModelParams p, double dt)
     + dt * 0.5 * (f_weak(U, UHat, p) + f_weak(UPrev, UHat, p));
 }
 
-Expr rk4(Expr U, Expr UHat, Expr UPrev, ModelParams p, double dt)
-{
-  Expr k1 = f_weak(UPrev, UHat, p);
-  Expr u1 = UHat * (U-UPrev) // UHat <- 1 for these?
-    + 0.5 * dt * k1;
-  Expr k2 = f_weak(u1, UHat, p); // No this can't be right, since now u1 is the arg of a weak form
-  Expr u2 = UHat * (U-UPrev)
-    + 0.5 * dt * k2;
-  Expr k3 = f_weak(u2, UHat, p);
-  Expr u3 = UHat * (U-UPrev)
-    + dt * k3;
-  Expr k4 = f_weak(u3, UHat, p);
-  return UHat*(U-UPrev)
-    + dt * (1./6.) * (k1 + 2*k2 + 2*k3 + k4);
-}
-
 int main(int argc, char** argv)
 {
   try
   {
-
     /* Define number of time steps and final time */
     int nSteps = 64;
     double T_final = 2.0; // Rescale this to make sense with data timescale (data is daily with T=k being k days since start; won't see much change in 1 day step)
@@ -107,51 +92,24 @@ int main(int argc, char** argv)
 
     double dt = T_final/((double) nSteps);
 
-    std::map<std::string, std::string> methodName{{"bwe","Backward Euler"},{"itr","Implicit Trapezoidal"}};
-    Out::root() << "Running simulation.\n";
-    Out::root() << "Method selected: " << methodName[method] << "\n";
-    Out::root() << "Time steps: " << nSteps << " (to time " << T_final << ", dt=" << dt << ")\n";
-
     /* We will do our linear algebra using Epetra */
     VectorType<double> vecType = new EpetraVectorType();
 
+    ex_opts(EX_VERBOSE);
+
     /* Create/load a mesh. */
     MeshType meshType = new BasicSimplicialMeshType();
-    MeshSource mesher{};
     if (meshFile == ""){
-      meshFile = "../../../data_products/datameshes/us_data";
+      meshFile = "/home/intergalactyc/Code/DiseasePDE/data_products/datameshes/SIR_100";
+      //"../../../data_products/datameshes/SIR_0";
     }
-    mesher = new ExodusMeshReader(meshFile, meshType); // This exo file has both mesh and data (for all timesteps) - what to do different?
-    Mesh mesh = mesher.getMesh(); // Failure here!!!
-
-    // NEED TO MAKE EXODUS FILE CONTAINING ONLY FIRST TIMESTEP
-    /* Here we will actually handle reading the data from the exo file */
-    // See Dox
-      // file://///wsl.localhost/Ubuntu/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/doc/html/doc_main.html
-    // Plan of action:
-      // Read file as above, forming the MeshSource object `mesher'
-        // file://///wsl.localhost/Ubuntu/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/doc/html/classSundance_1_1MeshSource.html
-      // Use mesher.getAttributes() to get arrays for S, I, R
-        // Pass in a pointer to an Array<Array<double>>, where each subarray is 
-        // all of the S, I, or R data (respectively), in CELL ORDER
-      // Easiest way to make it usable: make DiscreteFunction objects for each of S, I, R
-        // A DiscreteFunction has an associated vector containing the
-        // coefficients for each basis function. Use .getDiscreteFunctionVector
-        // file://///wsl.localhost/Ubuntu/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/doc/html/classSundance_1_1DiscreteFunction.html
-        // This vector is ordered by DOF?
-          // So, big hold up is the need to convert cell-ordered data into the right order for DiscreteFunction
-          // DiscreteFunction.map() gets the DOFMapBase
     
-    // Array<Array<double>> data_array(3);
-    // for (int i = 0; i < 3; ++i) {
-    //   data_array[i] = Array<double>(mesh.numCells(2));
-    //   for (int j = 0; j < mesh.numCells(2); ++j) {
-    //     data_array[i][j] = 0.;
-    //   }
-    // }
-    // Out::root() << data_array << endl;
+    Out::root() << "Loading mesh: " << meshFile << ".exo\n";
 
+    MeshSource reader = new ExodusMeshReader(meshFile, meshType); // This exo file has both mesh and data (for all timesteps) - what to do different?
+    Mesh mesh = reader.getMesh(); // Failure here!!!
 
+    Out::root() << "Mesh loaded successfully!\n";
 
     /* Create a cell filter that will identify the maximal cells
      * in the interior of the domain */
@@ -175,10 +133,14 @@ int main(int argc, char** argv)
     
     /* Initial profile (TODO: update this once we get getMesh working) */
     Expr UStart;
-
     Expr SStart = UStart[0];
     Expr IStart = UStart[1];
     Expr RStart = UStart[2];
+
+    std::map<std::string, std::string> methodName{{"bwe","Backward Euler"},{"itr","Implicit Trapezoidal"}};
+    Out::root() << "Running simulation.\n";
+    Out::root() << "Method selected: " << methodName[method] << "\n";
+    Out::root() << "Time steps: " << nSteps << " (to time " << T_final << ", dt=" << dt << ")\n";
 
     /* Represent the time variable as a parameter expression, NOT as
      * a double variable. The reason is that we need to be able to update
@@ -224,9 +186,6 @@ int main(int argc, char** argv)
           + (p.mu+p.w+p.gamm)*IHat*(I+IPrev) - p.beta*IHat*(I*S+IPrev*SPrev)
           + (p.mu+p.ell)*RHat*(R+RPrev) - p.gamm*RHat*(I+IPrev)
         );
-    } else if (method == "rk4") {
-      // 4th-order Runge-Kutta
-      
     } else {
       throw std::invalid_argument("solution method '" + method + "' not recognized.");
     }
@@ -243,7 +202,7 @@ int main(int argc, char** argv)
 
     /* Write the initial conditions */
     {
-      FieldWriter writer = new VTKWriter(outputLocation + "-0"); // Do we want to write out as Exodus?
+      FieldWriter writer = new ExodusWriter(outputLocation + "-0"); // Do we want to write out as Exodus?
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
       writer.addField("I", new ExprFieldWrapper(UPrev[1]));
@@ -267,7 +226,7 @@ int main(int argc, char** argv)
           
       updateDiscreteFunction(UNewt, UPrev);
       
-      FieldWriter writer = new VTKWriter(outputLocation + "-" 
+      FieldWriter writer = new ExodusWriter(outputLocation + "-" 
         + Teuchos::toString(i+1));
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
@@ -296,3 +255,32 @@ T xml_parameter(XMLObject sourceObj, std::string param_type, std::string attribu
   }
   return default_value;
 }
+
+
+// Exodus error with exerrval=1004 being called on mesh read
+// Corresponds to EX_LOOKUPFAIL (packages/seacas/libraries/exodus/cbind/include/exodusII.h 1997)
+// packages/seacas/libraries/exodus/cbind/src/ex_utils.c line 779
+  // ex_id_lkup, lookup for id 1
+  // Failure to locate element block id 1 in id variable
+// See exodump100.txt for the ncdump of the file being loaded
+// Compare to exodump_test.txt (Sundance ExodusWriter output from TestSIR.cpp)
+  // I see that eb_prop1 does not have name "ID" like the test does
+  // More importantly!: The test dump has eb_prop1 = 1 in the data section
+  // while the datamesh dump has eb_prop1 = 0 (this must be the source of the issue -
+  // it looks for id 1 while only id 0 exists)
+    // Went into the meshio _exodus.py and fixed this: was 0-indexed, made 1-indexed
+
+/*
+Exodus Library Warning/Error: [ex_get_var]
+        Error: failed to locate element block id 1 in id variable in file id 65536
+    exerrval = 1004
+Sundance detected exception: 
+/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/src-std-mesh/Sources/SundanceExodusMeshReader.cpp:491:
+
+Throw number = 1
+
+Throw test that evaluated to true: ierr < 0
+
+Error!
+caught in /home/intergalactyc/Code/TTUTrilinos/packages/Sundance/src-std-mesh/Sources/SundanceMeshSource.cpp:111
+*/

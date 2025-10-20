@@ -305,7 +305,7 @@ def write(filename, mesh, time_step_size: float = 1., time_final: float = None, 
         # long as they are different for the for different blocks.
         data = rootgrp.createVariable("eb_prop1", "i4", "num_el_blk")
         for k in range(len(mesh.cells)):
-            data[k] = k
+            data[k] = k+1 # EW: Sundance requires eb_prop1 index starts at 1, also having this just be k was inconsistent with lower enumeration...
         for k, cell_block in enumerate(mesh.cells):
             dim1 = f"num_el_in_blk{k + 1}"
             dim2 = f"num_nod_per_el{k + 1}"
