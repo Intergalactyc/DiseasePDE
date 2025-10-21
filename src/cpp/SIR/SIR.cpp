@@ -3,6 +3,8 @@
 
 #include "exodusII.h"
 
+const int nComp = 3;
+
 Expr grad = gradient(2);
 
 Expr f_weak(Expr U, Expr UHat, ModelParams p)
@@ -89,13 +91,10 @@ int main(int argc, char** argv)
 
     /* Initialize */
     Sundance::init(&argc, &argv);
-
-    double dt = T_final/((double) nSteps);
+    ex_opts(EX_VERBOSE); // For debugging purposes (q - is this built in to Sundance::init or anything?)
 
     /* We will do our linear algebra using Epetra */
     VectorType<double> vecType = new EpetraVectorType();
-
-    ex_opts(EX_VERBOSE);
 
     /* Create/load a mesh. */
     MeshType meshType = new BasicSimplicialMeshType();
@@ -107,9 +106,20 @@ int main(int argc, char** argv)
     Out::root() << "Loading mesh: " << meshFile << ".exo\n";
 
     MeshSource reader = new ExodusMeshReader(meshFile, meshType); // This exo file has both mesh and data (for all timesteps) - what to do different?
-    Mesh mesh = reader.getMesh(); // Failure here!!!
-
+    Mesh mesh = reader.getMesh();
+    RCP<Array<Array<double> > > nodeAttrValues;
+    RCP<Array<Array<double> > > elemAttrValues;
+    reader.getAttributes(nodeAttrValues, elemAttrValues);
     Out::root() << "Mesh loaded successfully!\n";
+
+    // Get values with *nodeAttrValues()
+
+    /* Represent the time variable as a parameter expression, NOT as
+     * a double variable. The reason is that we need to be able to update
+     * the time value without rebuilding expressions. */
+    Expr t = new Sundance::Parameter(0.0);
+    Expr tPrev = new Sundance::Parameter(0.0);
+    double dt = T_final/((double) nSteps);
 
     /* Create a cell filter that will identify the maximal cells
      * in the interior of the domain */
@@ -117,7 +127,7 @@ int main(int argc, char** argv)
       
     /* Create unknown and test functions, discretized using first-order
      * Lagrange interpolants */
-    BasisFamily bas = new Lagrange(1);
+    BasisFamily bas = new Lagrange(0); // Here we use P1; element data needs >=P0, while nodal data needs >=P1
     Expr S = new UnknownFunction(bas, "S");
     Expr I = new UnknownFunction(bas, "I");
     Expr R = new UnknownFunction(bas, "R");
@@ -126,33 +136,61 @@ int main(int argc, char** argv)
     Expr RHat = new TestFunction(bas, "RHat");
     Expr U = List(S, I, R);
     Expr UHat = List(SHat, IHat, RHat);
-
-    /* Create coordinate function */
-    Expr x = new CoordExpr(0);
-    Expr y = new CoordExpr(1);
     
-    /* Initial profile (TODO: update this once we get getMesh working) */
-    Expr UStart;
+    /* Create the discrete space */
+    DiscreteSpace discSpace(mesh, List(bas, bas, bas), vecType);
+
+    /* Use the data to form a DiscreteFunction representing the initial profile */
+    Out::root() << "Forming initial conditions DiscreteFunction with loaded data\n";
+
+    Array<Array<double> > data = *elemAttrValues();
+
+    int nCells = mesh.numCells(2); // 0 for nodes, 1 for edges, 2 for elements
+
+    // Validate that the size of the data is compatible with the mesh
+    TEUCHOS_TEST_FOR_EXCEPTION(
+      data.size() != nComp,
+      std::runtime_error,
+      "Data size incompatible with problem (" << data.size() << " components found instead of " << nComp << ")\n"
+    );
+    for (int i = 0; i < nComp; i++) {
+      TEUCHOS_TEST_FOR_EXCEPTION(
+        data[i].size() != nCells,
+        std::runtime_error,
+        "Data size incompatible with mesh (in component " << i << ", found " << data[i].size() << " elements instead of " << nCells << ")"
+      );
+    }
+
+    Expr UStart = new DiscreteFunction(discSpace, 0.0, "UStart");
+
+    Vector<double> vec = DiscreteFunction::discFunc(UStart)->getVector();
+    const RCP<DOFMapBase>& dofMap = DiscreteFunction::discFunc(UStart)->map();
+    for (int i = 0; i < nComp; i++) {
+      for (int j = 0; j < nCells; j++) {
+        Array<int> dofs;
+        dofMap->getDOFsForCell(2, j, i, dofs);
+        Out::root() << dofs << "\n";
+        int dof = dofs[0];
+        vec[dof] = data[i][j];
+      }
+    }
+    DiscreteFunction::discFunc(UStart)->setVector(vec);
+
+    Out::root() << UStart << "\n";
+
     Expr SStart = UStart[0];
     Expr IStart = UStart[1];
     Expr RStart = UStart[2];
 
-    std::map<std::string, std::string> methodName{{"bwe","Backward Euler"},{"itr","Implicit Trapezoidal"}};
-    Out::root() << "Running simulation.\n";
-    Out::root() << "Method selected: " << methodName[method] << "\n";
-    Out::root() << "Time steps: " << nSteps << " (to time " << T_final << ", dt=" << dt << ")\n";
+    Out::root() << "Initial conditions set!\n";
 
-    /* Represent the time variable as a parameter expression, NOT as
-     * a double variable. The reason is that we need to be able to update
-     * the time value without rebuilding expressions. */
-    Expr t = new Sundance::Parameter(0.0);
-    Expr tPrev = new Sundance::Parameter(0.0);
+    Out::root() << "Basis: " << discSpace.basis() << " (size " << discSpace.basis().size() << ")\n"; //Tmp
+    Out::root() << "UStart size: " << UStart.size() << "\n"; //Tmp
+    Out::root() << "UStart[i] size: " << UStart[0].size() << "\n"; //Tmp
 
-    /* Project onto P1 basis to form UPrev */
-    DiscreteSpace discSpace(mesh, List(bas, bas, bas), vecType);
+    /* Project onto the P1 basis to form UPrev */
     L2Projector projector(discSpace, UStart);
     Expr UPrev = projector.project();
-
     Expr SPrev = UPrev[0];
     Expr IPrev = UPrev[1];
     Expr RPrev = UPrev[2];
@@ -160,32 +198,20 @@ int main(int argc, char** argv)
     // Current Newton approximation
     Expr UNewt = copyDiscreteFunction(UPrev, "SIRNewt");
 
+    /* Use 4th order Gaussian quadrature */
     QuadratureFamily quad = new GaussianQuadrature(4);
 
-    /* Define the weak form, semidiscretized in time */
+    /* Define the weak form, semidiscretized in time, based on solution method */
     Expr weak;
-    if(method == "bwe"){
+    if (method == "fwe") {
+      // Forward Euler
+      weak = fwe(U, UHat, UPrev, p, dt);
+    } else if (method == "bwe") {
       // Backward Euler
-      weak = UHat*(U-UPrev)
-        + dt * (
-          p.D_S*(grad*SHat)*(grad*S) 
-          + p.D_I*(grad*IHat)*(grad*I)
-          + p.D_R*(grad*RHat)*(grad*R)
-          + p.mu*SHat*S + p.beta*SHat*I*S - p.ell*SHat*R - p.Lambda*SHat
-          + (p.mu+p.w+p.gamm)*IHat*I - p.beta*IHat*I*S
-          + (p.mu+p.ell)*RHat*R - p.gamm*RHat*I
-        );
+      weak = bwe(U, UHat, UPrev, p, dt);
     } else if (method == "itr") {
       // Implicit Trapezoidal
-      weak = UHat*(U-UPrev)
-        + 0.5 * dt * (
-          p.D_S*((grad*SHat)*(grad*S) + (grad*SHat)*(grad*SPrev))
-          + p.D_I*((grad*IHat)*(grad*I) + (grad*IHat)*(grad*IPrev))
-          + p.D_R*((grad*RHat)*(grad*R) + (grad*RHat)*(grad*RPrev))
-          + p.mu*SHat*(S+SPrev) + p.beta*SHat*(I*S+IPrev*SPrev) - p.ell*SHat*(R+RPrev) - 2*p.Lambda*SHat
-          + (p.mu+p.w+p.gamm)*IHat*(I+IPrev) - p.beta*IHat*(I*S+IPrev*SPrev)
-          + (p.mu+p.ell)*RHat*(R+RPrev) - p.gamm*RHat*(I+IPrev)
-        );
+      weak = itr(U, UHat, UPrev, p, dt);
     } else {
       throw std::invalid_argument("solution method '" + method + "' not recognized.");
     }
@@ -200,9 +226,14 @@ int main(int argc, char** argv)
     NonlinearSolver<double> solver 
       = NonlinearSolverBuilder::createSolver(solverFile);
 
+    std::map<std::string, std::string> methodName{{"bwe","Backward Euler"},{"itr","Implicit Trapezoidal"}};
+    Out::root() << "Running simulation.\n";
+    Out::root() << "Method selected: " << methodName[method] << "\n";
+    Out::root() << "Time steps: " << nSteps << " (to time " << T_final << ", dt=" << dt << ")\n";
+
     /* Write the initial conditions */
     {
-      FieldWriter writer = new ExodusWriter(outputLocation + "-0"); // Do we want to write out as Exodus?
+      FieldWriter writer = new ExodusWriter(outputLocation + "-0");
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
       writer.addField("I", new ExprFieldWrapper(UPrev[1]));
@@ -211,7 +242,6 @@ int main(int argc, char** argv)
     }
 
     /* Loop over timesteps */
-    double maxErr = 0.0;
     for (int i=0; i<nSteps; i++)
     {
       Out::root() << "timestep #" << i << endl;
@@ -255,32 +285,3 @@ T xml_parameter(XMLObject sourceObj, std::string param_type, std::string attribu
   }
   return default_value;
 }
-
-
-// Exodus error with exerrval=1004 being called on mesh read
-// Corresponds to EX_LOOKUPFAIL (packages/seacas/libraries/exodus/cbind/include/exodusII.h 1997)
-// packages/seacas/libraries/exodus/cbind/src/ex_utils.c line 779
-  // ex_id_lkup, lookup for id 1
-  // Failure to locate element block id 1 in id variable
-// See exodump100.txt for the ncdump of the file being loaded
-// Compare to exodump_test.txt (Sundance ExodusWriter output from TestSIR.cpp)
-  // I see that eb_prop1 does not have name "ID" like the test does
-  // More importantly!: The test dump has eb_prop1 = 1 in the data section
-  // while the datamesh dump has eb_prop1 = 0 (this must be the source of the issue -
-  // it looks for id 1 while only id 0 exists)
-    // Went into the meshio _exodus.py and fixed this: was 0-indexed, made 1-indexed
-
-/*
-Exodus Library Warning/Error: [ex_get_var]
-        Error: failed to locate element block id 1 in id variable in file id 65536
-    exerrval = 1004
-Sundance detected exception: 
-/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/src-std-mesh/Sources/SundanceExodusMeshReader.cpp:491:
-
-Throw number = 1
-
-Throw test that evaluated to true: ierr < 0
-
-Error!
-caught in /home/intergalactyc/Code/TTUTrilinos/packages/Sundance/src-std-mesh/Sources/SundanceMeshSource.cpp:111
-*/
