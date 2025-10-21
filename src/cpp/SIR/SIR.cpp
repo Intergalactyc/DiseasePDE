@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 
     std::string meshFile = "";
     std::string paramFile = "base-params.xml"; // Want to update to make more sense (especially update recovery rate to match our 8 day assumption in data gen)
-    std::string solverFile = "playa-newton-amesos.xml";
+    std::string solverFile = "playa-newton-amesos.xml"; // Sparse direct solver.
     std::string outputLocation = "../../../data_products/simulated/SIR";
     std::string method = "itr";
 
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
       
     /* Create unknown and test functions, discretized using first-order
      * Lagrange interpolants */
-    BasisFamily bas = new Lagrange(0); // Here we use P1; element data needs >=P0, while nodal data needs >=P1
+    BasisFamily bas = new Lagrange(0); // Here we use P0 as we have element data (nodal data needs P1)
     Expr S = new UnknownFunction(bas, "S");
     Expr I = new UnknownFunction(bas, "I");
     Expr R = new UnknownFunction(bas, "R");
@@ -181,7 +181,7 @@ int main(int argc, char** argv)
 
     Out::root() << "Initial conditions set!\n";
 
-    /* Project onto the P1 basis to form UPrev */
+    /* Project onto the P0 basis to form UPrev */
     L2Projector projector(discSpace, UStart);
     Expr UPrev = projector.project();
     Expr SPrev = UPrev[0];
@@ -223,6 +223,7 @@ int main(int argc, char** argv)
     Out::root() << "Running simulation.\n";
     Out::root() << "Method selected: " << methodName[method] << "\n";
     Out::root() << "Time steps: " << nSteps << " (to time " << T_final << ", dt=" << dt << ")\n";
+    Out::root() << "Mesh size: " << nCells << " cells\n";
 
     /* Write the initial conditions */
     {
@@ -246,9 +247,14 @@ int main(int argc, char** argv)
       TEUCHOS_TEST_FOR_EXCEPTION(state.finalState() != SolveConverged,
         std::runtime_error,
         "Nonlinear solve failed to converge: message=" << state.finalMsg());
-          
+      
       updateDiscreteFunction(UNewt, UPrev);
       
+      // TODO: try to determine how to write the timestep # / associated time value to the Exodus file
+      // It seems that in write_exo_mesh (called at some point in the ExodusWriter write),
+      // writing of data at multiple timesteps is supported - but how are they to be specified?
+      // And how would a different timestep be specified to start at? (It seems that the times will always start at 0, based on 773 & 775...?)
+      // /home/intergalactyc/Code/TTUTrilinos/packages/seacas/libraries/exodus/cbind/test/create_mesh.c
       FieldWriter writer = new ExodusWriter(outputLocation + "-" 
         + Teuchos::toString(i+1));
       writer.addMesh(mesh);

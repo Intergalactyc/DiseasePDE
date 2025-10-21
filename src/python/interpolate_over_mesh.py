@@ -14,7 +14,7 @@ OVERLAPS_PATH = os.path.join(DATA_PRODUCTS, "intermediate", "county_overlaps.jso
 INPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "meshes", "us.exo")
 OUTPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "datameshes")
 
-LIMIT = [100,101]
+LIMIT = [100,110]
 NPROC = 12
 
 def get_counties():

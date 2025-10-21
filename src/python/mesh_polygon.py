@@ -10,6 +10,7 @@ def parse():
     parser.add_argument("--state", type = str, default = None)
     parser.add_argument("--area", type = float, default = None)
     parser.add_argument("--show", action = "store_true", default = False)
+    parser.add_argument("-o", "--output-name", type = str, default = None)
 
     args = vars(parser.parse_args())
 
@@ -19,6 +20,7 @@ def main():
     args = parse()
     name = args["name"]
     area = args["area"]
+    out = args["output-name"] or name
 
     poly_path = os.path.join(DATA_PRODUCTS, "polygons", f"{name}.poly")
     if not os.path.exists(poly_path):
@@ -30,7 +32,7 @@ def main():
         mesh.plot()
         plt.show()
 
-    mesh.write(os.path.join(DATA_PRODUCTS, "meshes", f"{name}.exo"))
+    mesh.write(os.path.join(DATA_PRODUCTS, "meshes", f"{out}.exo"))
 
 if __name__ == "__main__":
     main()
