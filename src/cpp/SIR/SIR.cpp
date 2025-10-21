@@ -169,24 +169,17 @@ int main(int argc, char** argv)
       for (int j = 0; j < nCells; j++) {
         Array<int> dofs;
         dofMap->getDOFsForCell(2, j, i, dofs);
-        Out::root() << dofs << "\n";
         int dof = dofs[0];
         vec[dof] = data[i][j];
       }
     }
     DiscreteFunction::discFunc(UStart)->setVector(vec);
 
-    Out::root() << UStart << "\n";
-
     Expr SStart = UStart[0];
     Expr IStart = UStart[1];
     Expr RStart = UStart[2];
 
     Out::root() << "Initial conditions set!\n";
-
-    Out::root() << "Basis: " << discSpace.basis() << " (size " << discSpace.basis().size() << ")\n"; //Tmp
-    Out::root() << "UStart size: " << UStart.size() << "\n"; //Tmp
-    Out::root() << "UStart[i] size: " << UStart[0].size() << "\n"; //Tmp
 
     /* Project onto the P1 basis to form UPrev */
     L2Projector projector(discSpace, UStart);
