@@ -154,7 +154,7 @@ def read_polygon_from_poly(filename: str, exterior_first: bool = False) -> Polyg
                 exterior_ring = containments.index(n_holes)
                 if containments.count(1) != n_holes:
                     raise Exception('Hole descriptions invalid')
-            except:
+            except Exception:
                 raise Exception('No clear exterior detected')
 
         return Polygon(shell = rings[exterior_ring], holes = rings[:exterior_ring] + rings[(exterior_ring+1):])

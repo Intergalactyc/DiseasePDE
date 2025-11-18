@@ -1,5 +1,6 @@
 #include "Sundance.hpp"
 #include "SIR.hpp"
+#include <unordered_map>
 
 #include "exodusII.h"
 
@@ -41,6 +42,30 @@ Expr itr(Expr U, Expr UHat, Expr UPrev, ModelParams p, double dt)
     + dt * 0.5 * (f_weak(U, UHat, p) + f_weak(UPrev, UHat, p));
 }
 
+
+string clean_exo_string(const std::string& s) {
+    size_t end = s.find('\0');
+    std::string trimmed = s.substr(0, end);
+    while (!trimmed.empty() && trimmed.back() == ' ')
+        trimmed.pop_back();
+    return trimmed;
+}
+
+std::unordered_map<int, int> get_component_map(Array<string> attrNames) {
+  std::unordered_map<int, int> comps;
+  Array<string> all( {"S", "I", "R"} );
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      if (all[i] == clean_exo_string(attrNames[j])){
+        comps[i] = j;
+        // Out::root() << "comps[" << i << "] = " << j << "\n";
+        break;
+      }
+    }
+  }
+  return comps;
+}
+
 int main(int argc, char** argv)
 {
   try
@@ -51,15 +76,17 @@ int main(int argc, char** argv)
 
     std::string meshFile = "";
     std::string paramFile = "base-params.xml"; // Want to update to make more sense (especially update recovery rate to match our 8 day assumption in data gen)
-    std::string solverFile = "playa-newton-amesos.xml"; // Sparse direct solver.
-    std::string outputLocation = "../../../data_products/simulated/SIR";
+    std::string solverFile = "playa-newton-amesos.xml";// "aztec-ml.xml"; // "playa-newton-amesos.xml"; // Sparse direct solver
+    std::string outputLocation = "../../../data_products/simulated/";
+    std::string outputPrefix = "SIR";
     std::string method = "itr";
 
     /* Handle command-line options */
     Sundance::setOption("meshFile", meshFile, "Mesh file");
     Sundance::setOption("paramFile", paramFile, "XML file containing parameters");
     Sundance::setOption("solver", solverFile, "Name of XML file for solver");
-    Sundance::setOption("out", outputLocation, "Prefix for VTU file output");
+    Sundance::setOption("out", outputLocation, "Location of file output directory");
+    Sundance::setOption("prefix", outputPrefix, "Prefix of output file names (default is 'SIR')");
     Sundance::setOption("nt", nSteps, "Number of timesteps");
     Sundance::setOption("tf", T_final, "Final time");
     Sundance::setOption("method", method, "Numerical method");
@@ -110,7 +137,14 @@ int main(int argc, char** argv)
     RCP<Array<Array<double> > > nodeAttrValues;
     RCP<Array<Array<double> > > elemAttrValues;
     reader.getAttributes(nodeAttrValues, elemAttrValues);
+    RCP<Array<string>> nodeAttrNames;
+    RCP<Array<string>> elemAttrNames;
+    reader.getAttributeNames(nodeAttrNames, elemAttrNames);
+    // Out::root() << *nodeAttrNames() << "\n";
+    // Out::root() << *elemAttrNames() << "\n";
     Out::root() << "Mesh loaded successfully!\n";
+
+    std::unordered_map<int, int> componentMap = get_component_map(*elemAttrNames());
 
     // Get values with *nodeAttrValues()
 
@@ -166,11 +200,12 @@ int main(int argc, char** argv)
     Vector<double> vec = DiscreteFunction::discFunc(UStart)->getVector();
     const RCP<DOFMapBase>& dofMap = DiscreteFunction::discFunc(UStart)->map();
     for (int i = 0; i < nComp; i++) {
+      int c = componentMap[i];
       for (int j = 0; j < nCells; j++) {
         Array<int> dofs;
         dofMap->getDOFsForCell(2, j, i, dofs);
         int dof = dofs[0];
-        vec[dof] = data[i][j];
+        vec[dof] = data[c][j];
       }
     }
     DiscreteFunction::discFunc(UStart)->setVector(vec);
@@ -227,7 +262,7 @@ int main(int argc, char** argv)
 
     /* Write the initial conditions */
     {
-      FieldWriter writer = new ExodusWriter(outputLocation + "-0");
+      FieldWriter writer = new ExodusWriter(outputLocation + outputPrefix + "_0.0");
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
       writer.addField("I", new ExprFieldWrapper(UPrev[1]));
@@ -255,8 +290,7 @@ int main(int argc, char** argv)
       // writing of data at multiple timesteps is supported - but how are they to be specified?
       // And how would a different timestep be specified to start at? (It seems that the times will always start at 0, based on 773 & 775...?)
       // /home/intergalactyc/Code/TTUTrilinos/packages/seacas/libraries/exodus/cbind/test/create_mesh.c
-      FieldWriter writer = new ExodusWriter(outputLocation + "-" 
-        + Teuchos::toString(i+1));
+      FieldWriter writer = new ExodusWriter(outputLocation + outputPrefix + "_" + Teuchos::toString((i+1)*dt));
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
       writer.addField("I", new ExprFieldWrapper(UPrev[1]));
