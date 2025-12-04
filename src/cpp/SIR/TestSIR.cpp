@@ -91,7 +91,7 @@ int main(int argc, char** argv)
     double T_final = 2.0;
     int nx = 32;
 
-    std::string paramFile = "base-params.xml";
+    std::string paramFile = "test-params.xml";
     std::string solverFile = "playa-newton-amesos.xml";
     std::string outputLocation = "../../../data_products/test_results/SIR";
     std::string method = "itr";
@@ -246,7 +246,7 @@ int main(int argc, char** argv)
       = NonlinearSolverBuilder::createSolver(solverFile);
 
     /* Write the initial conditions */
-    {
+    if (!isTest) {
       FieldWriter writer = new ExodusWriter(outputLocation + "-0"); 
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
@@ -275,15 +275,15 @@ int main(int argc, char** argv)
         if (err > maxErr){
           maxErr = err;
         }
+      } else {
+          FieldWriter writer = new ExodusWriter(outputLocation + "-" 
+            + Teuchos::toString(i+1));
+          writer.addMesh(mesh);
+          writer.addField("S", new ExprFieldWrapper(UPrev[0]));
+          writer.addField("I", new ExprFieldWrapper(UPrev[1]));
+          writer.addField("R", new ExprFieldWrapper(UPrev[2]));
+          writer.write();
       }
-      
-      FieldWriter writer = new ExodusWriter(outputLocation + "-" 
-        + Teuchos::toString(i+1));
-      writer.addMesh(mesh);
-      writer.addField("S", new ExprFieldWrapper(UPrev[0]));
-      writer.addField("I", new ExprFieldWrapper(UPrev[1]));
-      writer.addField("R", new ExprFieldWrapper(UPrev[2]));
-      writer.write();
     }
     
     if (isTest) {

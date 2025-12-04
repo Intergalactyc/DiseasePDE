@@ -8,6 +8,8 @@ Makefile
 *.exe
 *dump*.txt
 data_products/
+*.csv
+*.ncdump
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

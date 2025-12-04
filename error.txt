@@ -1,0 +1,25 @@
+Parameter input file parsed successfully
+Loading mesh: /home/intergalactyc/Code/DiseasePDE/data_products/datameshes/SIR_100.exo
+Mesh loaded successfully!
+Forming initial conditions DiscreteFunction with loaded data
+Initial conditions set!
+Sundance detected exception: 
+/home/intergalactyc/Code/TTUTrilinos/packages/Sundance/Playa/src/PlayaNonlinearSolverBuilder.cpp:107:
+
+Throw number = 1
+
+Throw test that evaluated to true: true
+
+Nonlinear solver parameter list Linear Solver -> 
+ Max Iterations = 500   [unused]
+ Method = GMRES   [unused]
+ Tolerance = 1e-12   [unused]
+ Type = Aztec   [unused]
+ Verbosity = 0   [unused]
+ Preconditioner -> 
+  Type = ML   [unused]
+  Problem Type = SA   [unused]
+  ML Settings -> 
+   output = 10   [unused]
+ can't be parsed to find a nonlinear solver
+test FAILED
