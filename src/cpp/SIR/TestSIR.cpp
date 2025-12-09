@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     std::string solverFile = "playa-newton-amesos.xml";
     std::string outputLocation = "../../../data_products/test_results/SIR";
     std::string method = "itr";
-
+    
     /* Handle command-line options */
     Sundance::setOption("paramFile", paramFile, "XML file containing parameters");
     Sundance::setOption("solver", solverFile, "Name of XML file for solver");
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
       
     /* Create unknown and test functions, discretized using first-order
      * Lagrange interpolants */
-    BasisFamily bas = new Lagrange(1);
+    BasisFamily bas = new Lagrange(0); // 1
     Expr S = new UnknownFunction(bas, "S");
     Expr I = new UnknownFunction(bas, "I");
     Expr R = new UnknownFunction(bas, "R");
@@ -247,7 +247,7 @@ int main(int argc, char** argv)
 
     /* Write the initial conditions */
     if (!isTest) {
-      FieldWriter writer = new ExodusWriter(outputLocation + "-0"); 
+      FieldWriter writer = new ExodusWriter(outputLocation + "_0"); 
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
       writer.addField("I", new ExprFieldWrapper(UPrev[1]));
@@ -276,7 +276,7 @@ int main(int argc, char** argv)
           maxErr = err;
         }
       } else {
-          FieldWriter writer = new ExodusWriter(outputLocation + "-" 
+          FieldWriter writer = new ExodusWriter(outputLocation + "_" 
             + Teuchos::toString(i+1));
           writer.addMesh(mesh);
           writer.addField("S", new ExprFieldWrapper(UPrev[0]));

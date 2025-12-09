@@ -2,13 +2,17 @@ import meshio
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.tri as tri
-from matplotlib.colors import SymLogNorm
+from matplotlib.colors import SymLogNorm, Normalize
 import argparse
 import pathlib
 # from glob import glob
 
-SIMD = pathlib.Path(__file__).parent.parent.parent / "data_products" / "simulated"
-DATA = pathlib.Path(__file__).parent.parent.parent / "data_products" / "datameshes"
+# note that this only works currently with cell (not point) data
+
+PRODUCTS = pathlib.Path(__file__).parent.parent.parent / "data_products"
+SIMD = PRODUCTS / "simulated"
+DATA = PRODUCTS / "datameshes"
+TEST = PRODUCTS / "test_results"
 
 class Result:
     def __init__(self, filepaths):
@@ -82,19 +86,19 @@ class Result:
         plt.tight_layout()
         plt.show(block=False)
 
-    def animate(self, compartment, cmap="coolwarm"):
+    def animate(self, compartment, cmap="coolwarm", log=True):
         def get_vals(i):
             time = self.timesteps[i]
             data_t = self.cell_data[time]
             if compartment.lower().endswith("capita"):
-                return data_t["I"]/sum(data_t[c] for c in data_t.keys())
+                return time, data_t["I"]/sum(data_t[c] for c in data_t.keys())
             elif compartment.lower() == "total":
-                return sum(data_t[c] for c in data_t.keys())
+                return time, sum(data_t[c] for c in data_t.keys())
             return time, data_t[compartment]
 
         t0, vals = get_vals(0)
 
-        norm = SymLogNorm(linthresh=1e-6, vmin=0, vmax=1)
+        norm = SymLogNorm(linthresh=1e-6, vmin=0, vmax=1) if log else Normalize(vmin=0, vmax=1)
         # norm = SymLogNorm(linthresh=1e-6, vmin=self.mins[compartment], vmax=self.maxes[compartment])
 
         plttri = tri.Triangulation(self.x, self.y, self.triangles)
@@ -110,7 +114,7 @@ class Result:
         )
         # FuncAnimation with tpc.set_facecolors()
         cbar = fig.colorbar(tpc, ax=ax)
-        cbar.set_label(f"{compartment} (log scale)")
+        cbar.set_label(f"{compartment} (log scale)" if log else compartment)
 
         label = ax.text(0, 0, f"Time: {t0} (index 0)", ha="left", va="center", fontsize=8, transform=ax.transAxes)
 
@@ -143,12 +147,16 @@ class Result:
 def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c","--compartment",type=str,default="per capita",help="compartment to plot")
+    parser.add_argument("-l","--linear",action="store_true",help="use linear (not logarithmic) scaling for animation")
     return vars(parser.parse_args())
 
 if __name__ == "__main__":
     args = parse()
+
+    matches = TEST.glob("SIR_*.exo")
     # matches = SIMD.glob("ALT_*.exo")
-    matches = SIMD.glob("NEW_*.exo")
+    # matches = SIMD.glob("NEW_*.exo")
     # matches = [str(DATA.joinpath(f"SIR_{t}.exo")) for t in range(100,1000,20)]#glob("SIR_*.exo")
+    
     res = Result(matches)
-    res.animate(args["compartment"])    
+    res.animate(args["compartment"], log=not args["linear"])
