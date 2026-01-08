@@ -22,4 +22,5 @@ Expr UExact(const Expr& x, const Expr& y, const Expr& t);
 Expr resid(const Expr& x, const Expr& y, const Expr& t, const ModelParams p);
 
 const double pi = 4.0*atan(1.0);
-
+const double deg2rad = pi/180.;
+const double rad2deg = 180./pi;
