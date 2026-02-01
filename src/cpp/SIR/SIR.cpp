@@ -163,7 +163,7 @@ int main(int argc, char** argv)
      * in the interior of the domain */
     CellFilter interior = new MaximalCellFilter();
       
-    /* Create unknown and test functions, discretized using first-order
+    /* Create unknown and test functions, discretized using zeroth-order
      * Lagrange interpolants */
     BasisFamily bas = new Lagrange(0); // Here we use P0 as we have element data (nodal data needs P1)
     Expr S = new UnknownFunction(bas, "S");
