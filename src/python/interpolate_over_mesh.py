@@ -14,6 +14,7 @@ OVERLAPS_PATH = os.path.join(DATA_PRODUCTS, "intermediate", "county_overlaps.jso
 INPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "meshes", "us.exo")
 OUTPUT_MESH_PATH = os.path.join(DATA_PRODUCTS, "datameshes")
 
+# TODO: figure out error (running overnight to recompute overlaps after regenning us.exo)
 LIMIT = None#[100,110]
 NPROC = 12
 
@@ -58,8 +59,8 @@ def elements_from_mesh(mesh) -> list[Polygon]:
 def _interpolator_worker(args):
     interpolator, elem_counties, i = args
     return {
-        k : np.array([interpolator._interpolate_element(cs, k, i)
-            for cs in elem_counties])
+        k : [np.array([interpolator._interpolate_element(cs, k, i) if cs else 0.0
+            for cs in elem_counties])]
         for k in interpolator.data.keys()
     }
 
@@ -109,7 +110,7 @@ class CountyInterpolator:
                     weight = c["geometry"].intersection(element).area
                     raw_result[int(c["FIPS"])] = weight
                     sum_weights += weight
-        result = {cf : w / sum_weights for cf, w in raw_result.items()} # So that total weight is 1
+        result = {str(cf) : w / sum_weights for cf, w in raw_result.items()} # So that total weight is 1
         if len(result.keys()) == 0:
             print(f"Failed to find any counties matching {element}")
         return result
@@ -127,9 +128,9 @@ class CountyInterpolator:
             raise Exception(f"Invalid number of processors {nproc=}")
         elif nproc == 1:
             result = [ # List in which each element is a timestep
-                { # Each timestep is a dictionary of `compartment : [data value by element]` pairs
-                    k : np.array([self._interpolate_element(cs, k, i)
-                        for cs in elem_counties]) # Data list follows same order as elems
+                { # Each timestep is a dictionary of `compartment : [[data value by element]]` pairs (nested list because of several element blocks)
+                    k : [np.array([self._interpolate_element(cs, k, i) if cs else 0.0
+                        for cs in elem_counties])] # Data list follows same order as elems
                     for k in self.data.keys()
                 }
                 for i in tqdm(index)

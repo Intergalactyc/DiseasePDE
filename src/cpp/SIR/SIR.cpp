@@ -6,10 +6,6 @@
 
 const int nComp = 3;
 
-// Theta is colatitude (adjust) // phi is -longitude
-// correct for degrees, and when considering values with /km^2 units consider scale factor
-// can use grad[0] and grad[1] for x/y components
-
 Expr grad = gradient(2);
 
 Expr f_weak(Expr U, Expr UHat, ModelParams p)

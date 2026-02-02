@@ -1,3 +1,8 @@
+## Sundance
+`make SIR.exe`
+
+`./SIR.exe --nt=NT --tf=TF <--prefix=> <--meshFile=...> <--paramFile=> <--out=> <--method=> <--solver=>`
+
 ## Data sources
 *Names in parentheses are the corresponding options in the `[paths]` section of the config.ini file*
 

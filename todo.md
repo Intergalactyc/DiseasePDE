@@ -1,3 +1,6 @@
+# New (Spring 2026)
+
+# OLD (Fall 2025)
 - DiscreteFunction problem
     - Need a way of loading data at each timestep into Sundance.
 - Find original data paths for other files

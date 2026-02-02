@@ -171,6 +171,8 @@ int main(int argc, char** argv)
       
     /* Create unknown and test functions, discretized using first-order
      * Lagrange interpolants */
+      // THE BELOW DOESN'T WORK BECAUSE P0 IS NOT DIFFERENTIABLE (NOT EVEN CONTINUOUS)
+      // TODO: work out projection logic and solve on P1
     BasisFamily bas = new Lagrange(0); // Here we use P0 as we have element data (nodal data needs P1)
     Expr S = new UnknownFunction(bas, "S");
     Expr I = new UnknownFunction(bas, "I");
@@ -223,7 +225,9 @@ int main(int argc, char** argv)
         vec[dof] = data[c][j];
       }
     }
-    DiscreteFunction::discFunc(UStart)->setVector(vec);
+    DiscreteFunction::discFunc(UStartNaive)->setVector(vec);
+    // TODO: project (create UStartNaive, then UStart = (new_projector).project())
+      // new projector should project P0->P1
 
     Expr SStart = UStart[0];
     Expr IStart = UStart[1];
@@ -232,7 +236,7 @@ int main(int argc, char** argv)
     Out::root() << "Initial conditions set!\n";
 
     /* Project onto the P0 basis to form UPrev */
-    L2Projector projector(discSpace, UStart);
+    L2Projector projector(discSpace, UStart); // TODO: account for new projection here
     Expr UPrev = projector.project();
     Expr SPrev = UPrev[0];
     Expr IPrev = UPrev[1];
@@ -277,6 +281,7 @@ int main(int argc, char** argv)
 
     /* Write the initial conditions */
     {
+      // TODO: how does this change with our proj?
       FieldWriter writer = new ExodusWriter(outputLocation + outputPrefix + "_0.0");
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
@@ -305,6 +310,8 @@ int main(int argc, char** argv)
       // writing of data at multiple timesteps is supported - but how are they to be specified?
       // And how would a different timestep be specified to start at? (It seems that the times will always start at 0, based on 773 & 775...?)
       // /home/intergalactyc/Code/TTUTrilinos/packages/seacas/libraries/exodus/cbind/test/create_mesh.c
+      
+      // TODO: need to account for projection (reproject P1 solution onto P0 to write out)
       FieldWriter writer = new ExodusWriter(outputLocation + outputPrefix + "_" + Teuchos::toString((i+1)*dt));
       writer.addMesh(mesh);
       writer.addField("S", new ExprFieldWrapper(UPrev[0]));
