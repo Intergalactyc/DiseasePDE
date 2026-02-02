@@ -8,3 +8,4 @@ numpy
 matplotlib
 netcdf4
 fastparquet
+rich

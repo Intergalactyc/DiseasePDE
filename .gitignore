@@ -10,6 +10,7 @@ Makefile
 data_products/
 *.csv
 *.ncdump
+dumps/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

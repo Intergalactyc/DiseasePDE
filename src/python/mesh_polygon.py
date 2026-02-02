@@ -20,7 +20,7 @@ def main():
     args = parse()
     name = args["name"]
     area = args["area"]
-    out = args["output-name"] or name
+    out = args.get("output-name") or name
 
     poly_path = os.path.join(DATA_PRODUCTS, "polygons", f"{name}.poly")
     if not os.path.exists(poly_path):
