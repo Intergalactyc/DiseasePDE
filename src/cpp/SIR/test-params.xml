@@ -1,8 +1,8 @@
 <ModelParameters>
   <DiffusionParameters
-    susceptible="1.0"
-    infectious="0.5"
-    recovered="1.5"
+    susceptible="0.01"
+    infectious="0.001"
+    recovered="0.01"
   />
   <PopulationParameters
     base_mortality="0.00001"

@@ -1,4 +1,6 @@
 # New (Spring 2026)
+- note that pop densities are given in people/km^2
+- point of confusion: D are in units of L^2/T (km^2/day), yet nothing in the cpp code is ever actually distance-aware? so how can it possibly be factored in?
 
 # OLD (Fall 2025)
 - DiscreteFunction problem
