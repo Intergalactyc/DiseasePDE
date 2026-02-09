@@ -24,3 +24,7 @@ Expr resid(const Expr& x, const Expr& y, const Expr& t, const ModelParams p);
 const double pi = 4.0*atan(1.0);
 const double deg2rad = pi/180.;
 const double rad2deg = 180./pi;
+
+const double R = 1.; // radius of Earth, arbitrary (only for GlobalCoordinateSystem definition - cancels out everywhere it's used by us)
+
+const int nComp = 3;
