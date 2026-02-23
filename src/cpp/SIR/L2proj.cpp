@@ -269,14 +269,13 @@ int main(int argc, char** argv)
     Expr U = List(S, I, R);
     Expr UHat = List(SHat, IHat, RHat);
 
-    /* Project onto the P1 basis to form UPrev */
-    L2Projector projector(discNodeSpace, UStart);
-    Expr UPrev = projector.project();
+    /* Form UPrev */
+    Expr UPrev = copyDiscreteFunction(UStart);
     Expr SPrev = UPrev[0];
     Expr IPrev = UPrev[1];
     Expr RPrev = UPrev[2];
 
-    // Current Newton approximation
+    /* Current Newton approximation */
     Expr UNewt = copyDiscreteFunction(UPrev, "SIRNewt");
 
     /* Use 4th order Gaussian quadrature */
@@ -320,12 +319,19 @@ int main(int argc, char** argv)
     /* Write the initial conditions (from the P0 data) */
     {
       FieldWriter writer = new ExodusWriter(outputLocation + outputPrefix + "_0.0");
+
       writer.addMesh(mesh);
-      writer.addField("S", new ExprFieldWrapper(cellData[0]));
-      writer.addField("I", new ExprFieldWrapper(cellData[1]));
-      writer.addField("R", new ExprFieldWrapper(cellData[2]));
+      writer.addField("S0", new ExprFieldWrapper(cellData[0]));
+      writer.addField("I0", new ExprFieldWrapper(cellData[1]));
+      writer.addField("R0", new ExprFieldWrapper(cellData[2]));
+
+      writer.addField("S", new ExprFieldWrapper(UStart[0]));
+      writer.addField("I", new ExprFieldWrapper(UStart[1]));
+      writer.addField("R", new ExprFieldWrapper(UStart[2]));
       writer.write();
     }
+
+    exit(0);
 
     /* Loop over timesteps */
     for (int i=0; i<nSteps; i++)

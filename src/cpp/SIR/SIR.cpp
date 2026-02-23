@@ -4,8 +4,6 @@
 
 #include "exodusII.h"
 
-const int nComp = 3;
-
 Expr grad = gradient(2);
 
 Expr f_weak(Expr U, Expr UHat, ModelParams p)

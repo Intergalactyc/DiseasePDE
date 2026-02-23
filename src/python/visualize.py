@@ -153,7 +153,9 @@ def parse():
 if __name__ == "__main__":
     args = parse()
 
-    matches = SIMD.glob("L2SIR_*.exo")
+    matches = SIMD.glob("init_*.exo")
+    # matches = SIMD.glob("CLSIR_*.exo")
+
     # matches = TEST.glob("SIR_*.exo")
     # matches = SIMD.glob("ALT_*.exo")
     # matches = SIMD.glob("NEW_*.exo")

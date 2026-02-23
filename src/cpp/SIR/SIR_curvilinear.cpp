@@ -4,8 +4,6 @@
 
 #include "exodusII.h"
 
-const int nComp = 3;
-
 // Theta is colatitude (adjust) // phi is -longitude
 // correct for degrees, and when considering values with /km^2 units consider scale factor
 // can use grad[0] and grad[1] for x/y components
@@ -225,9 +223,7 @@ int main(int argc, char** argv)
         vec[dof] = data[c][j];
       }
     }
-    DiscreteFunction::discFunc(UStartNaive)->setVector(vec);
-    // TODO: project (create UStartNaive, then UStart = (new_projector).project())
-      // new projector should project P0->P1
+    DiscreteFunction::discFunc(UStart)->setVector(vec);
 
     Expr SStart = UStart[0];
     Expr IStart = UStart[1];
